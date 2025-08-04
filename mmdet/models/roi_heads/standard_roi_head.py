@@ -253,9 +253,10 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         det_bboxes, det_labels = self.simple_test_bboxes(
             x, img_metas, proposal_list, self.test_cfg, rescale=rescale)
 
+        with_bg = (self.test_cfg is None)
         bbox_results = [
             bbox2result(det_bboxes[i], det_labels[i],
-                        self.bbox_head.num_classes)
+                        self.bbox_head.num_classes, with_bg=with_bg)
             for i in range(len(det_bboxes))
         ]
 

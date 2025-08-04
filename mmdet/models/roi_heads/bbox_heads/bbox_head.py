@@ -371,9 +371,7 @@ class BBoxHead(BaseModule):
         if cfg is None:
             # return bboxes, and labels without nms
             det_labels = scores.argmax(dim=-1)
-            det_bboxes = bboxes
-            det_scores = torch.gather(scores, 1, det_labels[:, None])
-            det_bboxes = torch.cat([bboxes, det_scores], dim=1)
+            det_bboxes = torch.cat([bboxes, scores], dim=1)
             return det_bboxes, det_labels
         else:
             det_bboxes, det_labels = multiclass_nms(bboxes, scores,

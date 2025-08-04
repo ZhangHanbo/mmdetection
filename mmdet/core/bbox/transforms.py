@@ -113,7 +113,7 @@ def roi2bbox(rois):
     return bbox_list
 
 
-def bbox2result(bboxes, labels, num_classes, with_bg=False):
+def bbox2result(bboxes, labels, num_classes, split_classes=True):
     """Convert detection results to a list of numpy arrays.
 
     Args:
@@ -124,14 +124,25 @@ def bbox2result(bboxes, labels, num_classes, with_bg=False):
     Returns:
         list(ndarray): bbox results of each class
     """
-    if bboxes.shape[0] == 0:
-        return [np.zeros((0, 5), dtype=np.float32) for i in range(num_classes)]
+    if split_classes:
+        if bboxes.shape[0] == 0:
+            return [np.zeros((0, 5), dtype=np.float32) for i in range(num_classes)]
+        else:
+            if isinstance(bboxes, torch.Tensor):
+                bboxes = bboxes.detach().cpu().numpy()
+                labels = labels.detach().cpu().numpy()
+            return [bboxes[labels == i, :] for i in range(num_classes)]
     else:
-        if isinstance(bboxes, torch.Tensor):
-            bboxes = bboxes.detach().cpu().numpy()
-            labels = labels.detach().cpu().numpy()
-        num_classes = num_classes + 1 if with_bg else num_classes
-        return [bboxes[labels == i, :] for i in range(num_classes)]
+        if bboxes.shape[0] == 0:
+            return np.zeros((0, 5), dtype=np.float32)
+        else:
+            _bboxes = bboxes[:, :4].detach().cpu().numpy()
+            _scores = bboxes[:, 4:].detach().cpu().numpy()
+            assert _scores.shape[1] == num_classes + 1, \
+                f'Number of classes {num_classes} does not match ' \
+                f'with the number of scores {_scores.shape[1]}.'
+            return [np.concatenate([
+                _bboxes, _scores[:, i:i + 1]], axis=1) for i in range(num_classes + 1)]
 
 
 def distance2bbox(points, distance, max_shape=None):
